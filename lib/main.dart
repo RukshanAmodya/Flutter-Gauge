@@ -533,79 +533,43 @@ class SolarGaugePainter extends CustomPainter {
       );
     }
 
-    // 4. Draw Radial Ticks (main) + very subtle sub-ticks between each main tick
-    const int tickCount = 70;
-    // Each gap between main ticks is divided into 4 sub-intervals (so 3 sub-ticks in between)
-    const int subDivisions = 4;
-    final int totalSteps = (tickCount - 1) * subDivisions;
-    final double fineAngleStep = totalSweepRad / totalSteps;
+    // 4. Draw Radial Ticks - All uniform same size, same spacing (matching reference image)
+    const int tickCount = 120; // More ticks = denser, more refined look
+    final double angleStep = totalSweepRad / (tickCount - 1);
 
-    for (int s = 0; s <= totalSteps; s++) {
-      final double angle = startAngleRad + (s * fineAngleStep);
-      final bool isMainTick = (s % subDivisions == 0);
-      final int mainTickIndex = s ~/ subDivisions;
-
-      final double progressAtTick = s / totalSteps;
+    for (int i = 0; i < tickCount; i++) {
+      final double angle = startAngleRad + (i * angleStep);
+      final double progressAtTick = i / (tickCount - 1);
       final bool isActive = progressAtTick <= fillPercentage;
 
-      // Major ticks are at start, 1/4, 2/4 (top), 3/4, and end
-      final bool isMajor = isMainTick &&
-          (mainTickIndex == 0 ||
-              mainTickIndex == (tickCount - 1) ~/ 4 ||
-              mainTickIndex == (tickCount - 1) ~/ 2 ||
-              mainTickIndex == ((tickCount - 1) * 3) ~/ 4 ||
-              mainTickIndex == tickCount - 1);
+      // All ticks are uniform - same length and thickness
+      const double tickLength = 8.0;
+      const double tickThickness = 1.2;
+      const double startRadiusFactor = 0.76;
 
-      // Sub-ticks are tiny and barely visible
-      final bool isSubTick = !isMainTick;
-
-      double tickLength;
-      double tickThickness;
-      if (isMajor) {
-        tickLength = (16.0) + (isActive ? 2.0 : 0.0);
-        tickThickness = (3.0) + (isActive ? 0.8 : 0.0);
-      } else if (isMainTick) {
-        tickLength = (10.0) + (isActive ? 2.0 : 0.0);
-        tickThickness = (1.5) + (isActive ? 0.8 : 0.0);
-      } else {
-        // Sub-tick: very short and very thin
-        tickLength = 4.5;
-        tickThickness = 0.8;
-      }
-
-      final startRadius = isSubTick ? radius * 0.775 : radius * 0.75;
-      final endRadius = startRadius + tickLength;
+      final double startR = radius * startRadiusFactor;
+      final double endR = startR + tickLength;
 
       final startOffset = Offset(
-        center.dx + startRadius * cos(angle),
-        center.dy + startRadius * sin(angle),
+        center.dx + startR * cos(angle),
+        center.dy + startR * sin(angle),
       );
       final endOffset = Offset(
-        center.dx + endRadius * cos(angle),
-        center.dy + endRadius * sin(angle),
+        center.dx + endR * cos(angle),
+        center.dy + endR * sin(angle),
       );
 
+      // Fading opacity: full brightness at top, fading towards bottom ends
       final double distance = (angle - 270 * pi / 180).abs();
       final double maxDistance = 135 * pi / 180;
       final double distanceNormalized = (distance / maxDistance).clamp(0.0, 1.0);
 
-      double opacityFactor;
-      if (isSubTick) {
-        // Sub-ticks: always very faint, barely visible
-        opacityFactor = (1.0 - (distanceNormalized * 0.95)) * 0.18;
-      } else if (isActive) {
-        opacityFactor = 1.0 - (distanceNormalized * 0.35);
-      } else {
-        opacityFactor = (1.0 - (distanceNormalized * 0.95)) * 0.35;
-      }
+      final double opacityFactor = isActive
+          ? 1.0 - (distanceNormalized * 0.30) // Active: stays bright, slight fade
+          : (1.0 - (distanceNormalized * 0.95)) * 0.30; // Inactive: soft/faint
 
-      final Color baseTickColor = isSubTick
-          ? const Color(0xFFCBD5E1)
-          : isActive
-              ? themeColor
-              : (isMajor ? const Color(0xFF94A3B8) : const Color(0xFFE2E8F0));
-
-      final Color tickColor = baseTickColor.withOpacity(opacityFactor.clamp(0.0, 1.0));
+      final Color baseColor = isActive ? themeColor : const Color(0xFFCBD5E1);
+      final Color tickColor = baseColor.withOpacity(opacityFactor.clamp(0.0, 1.0));
 
       final tickPaint = Paint()
         ..color = tickColor
