@@ -543,7 +543,7 @@ class SolarGaugePainter extends CustomPainter {
       final bool isActive = progressAtTick <= fillPercentage;
 
       // All ticks are uniform - same length and thickness
-      const double tickLength = 8.0;
+      const double tickLength = 8.8;
       const double tickThickness = 1.2;
       const double startRadiusFactor = 0.76;
 
