@@ -278,23 +278,7 @@ class _GaugeScreenState extends State<GaugeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Simulator Controls',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Adjust configurations to simulate real-time solar generation.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                      const Divider(height: 32, color: Color(0xFFF1F5F9)),
+
                       // Inputs row
                       Row(
                         children: [
@@ -575,10 +559,10 @@ class SolarGaugePainter extends CustomPainter {
       final double maxDistance = 135 * pi / 180;
       final double distanceNormalized = (distance / maxDistance).clamp(0.0, 1.0);
       
-      // Active ticks fade much less (stay bright), inactive ticks fade out to 5% opacity at the ends
+      // Active ticks fade much less (stay bright), inactive ticks fade out and have much lower base opacity (very soft)
       final double opacityFactor = isActive 
           ? 1.0 - (distanceNormalized * 0.35)
-          : 1.0 - (distanceNormalized * 0.95);
+          : (1.0 - (distanceNormalized * 0.95)) * 0.35;
 
       final Color baseTickColor = isActive
           ? themeColor
