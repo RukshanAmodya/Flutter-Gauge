@@ -554,10 +554,11 @@ class SolarGaugePainter extends CustomPainter {
           i == ((tickCount - 1) * 3) ~/ 4 ||
           i == tickCount - 1);
 
-      final double tickLength = isMajor ? 12.0 : 6.0;
-      final double tickThickness = isMajor ? 2.5 : 1.0;
+      // Make active ticks stand out more by adding length and thickness
+      final double tickLength = (isMajor ? 16.0 : 10.0) + (isActive ? 2.0 : 0.0);
+      final double tickThickness = (isMajor ? 3.0 : 1.5) + (isActive ? 0.8 : 0.0);
 
-      final startRadius = radius * 0.76;
+      final startRadius = radius * 0.75;
       final endRadius = startRadius + tickLength;
 
       final startOffset = Offset(
@@ -574,8 +575,10 @@ class SolarGaugePainter extends CustomPainter {
       final double maxDistance = 135 * pi / 180;
       final double distanceNormalized = (distance / maxDistance).clamp(0.0, 1.0);
       
-      // opacityFactor: 1.0 at top, fading to 0.05 at the ends
-      final double opacityFactor = 1.0 - (distanceNormalized * 0.95);
+      // Active ticks fade much less (stay bright), inactive ticks fade out to 5% opacity at the ends
+      final double opacityFactor = isActive 
+          ? 1.0 - (distanceNormalized * 0.35)
+          : 1.0 - (distanceNormalized * 0.95);
 
       final Color baseTickColor = isActive
           ? themeColor
