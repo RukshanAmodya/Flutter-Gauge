@@ -396,7 +396,7 @@ class _GaugeScreenState extends State<GaugeScreen> {
                             '${_currentPowerW.toStringAsFixed(0)} W',
                             style: TextStyle(
                               fontSize: 15,
-                              fontWeight: FontWeight.extrabold,
+                              fontWeight: FontWeight.w800,
                               color: activeColor,
                             ),
                           ),
