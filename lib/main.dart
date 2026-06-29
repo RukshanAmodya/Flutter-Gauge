@@ -427,33 +427,7 @@ class _GaugeScreenState extends State<GaugeScreen> {
                           },
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      // Presets Section
-                      const Text(
-                        'Quick Simulation Presets',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8.0,
-                        runSpacing: 8.0,
-                        children: [
-                          _buildPresetChip(0.0, '0% (Empty)', activeColor),
-                          _buildPresetChip(
-                              maxPowerW * 0.15, '15% (Orange)', activeColor),
-                          _buildPresetChip(
-                              maxPowerW * 0.40, '40% (Yellow)', activeColor),
-                          _buildPresetChip(
-                              maxPowerW * 0.60, '60% (Green)', activeColor),
-                          _buildPresetChip(
-                              maxPowerW * 0.90, '90% (Teal)', activeColor),
-                          _buildPresetChip(maxPowerW, '100% (Max)', activeColor),
-                        ],
-                      ),
+
                     ],
                   ),
                 ),
@@ -489,43 +463,7 @@ class _GaugeScreenState extends State<GaugeScreen> {
     );
   }
 
-  Widget _buildPresetChip(double value, String label, Color highlightColor) {
-    final maxPowerW = _capacityKWp * 1000.0;
-    final bool isSelected = _currentPowerW.toStringAsFixed(0) ==
-        value.clamp(0.0, maxPowerW).toStringAsFixed(0);
 
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _currentPowerW = value;
-          _powerController.text = value.toStringAsFixed(0);
-        });
-      },
-      borderRadius: BorderRadius.circular(10),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? highlightColor.withOpacity(0.12)
-              : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected ? highlightColor : const Color(0xFFE2E8F0),
-            width: 1.2,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: isSelected ? highlightColor : const Color(0xFF475569),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class SolarGaugePainter extends CustomPainter {
@@ -714,13 +652,19 @@ class SolarGaugePainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     canvas.drawCircle(needleEnd, 3.5, needleTipPaint);
 
-    // 7. Draw central texts inside the gauge (0, W, PV Power)
-    // - Current value text ("0" or actual power)
+    // 7. Draw central texts inside the gauge (Dynamic W / kW formatting)
+    final bool isKw = currentValue >= 1000.0;
+    final String displayValue = isKw 
+        ? (currentValue / 1000.0).toStringAsFixed(2) 
+        : currentValue.toStringAsFixed(0);
+    final String displayUnit = isKw ? 'kW' : 'W';
+
+    // - Current value text
     final valueSpan = TextSpan(
-      text: currentValue.toStringAsFixed(0),
+      text: displayValue,
       style: const TextStyle(
         fontSize: 48,
-        fontWeight: FontWeight.w900, // Thicker font weight for modern premium look
+        fontWeight: FontWeight.w900,
         color: Color(0xFF0F172A),
         height: 1.0,
       ),
@@ -736,9 +680,9 @@ class SolarGaugePainter extends CustomPainter {
       Offset(center.dx - valuePainter.width / 2, center.dy - 35),
     );
 
-    // - Unit text ("W")
+    // - Unit text
     final unitSpan = TextSpan(
-      text: 'W',
+      text: displayUnit,
       style: const TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
