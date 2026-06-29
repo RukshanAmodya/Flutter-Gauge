@@ -19,11 +19,6 @@ class MyApp extends StatelessWidget {
           seedColor: const Color(0xFF00A294),
           brightness: Brightness.light,
         ),
-        cardTheme: const CardTheme(
-          color: Colors.white,
-          elevation: 2,
-          shadowColor: Color(0x1A000000),
-        ),
       ),
       home: const GaugeScreen(),
     );
@@ -126,6 +121,9 @@ class _GaugeScreenState extends State<GaugeScreen> {
             children: [
               // The main Gauge inside a clean Card
               Card(
+                color: Colors.white,
+                elevation: 2.0,
+                shadowColor: const Color(0x1A000000),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24.0),
                 ),
@@ -180,6 +178,9 @@ class _GaugeScreenState extends State<GaugeScreen> {
               const SizedBox(height: 24),
               // Control Panel Card for inputs
               Card(
+                color: Colors.white,
+                elevation: 2.0,
+                shadowColor: const Color(0x1A000000),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16.0),
                 ),
