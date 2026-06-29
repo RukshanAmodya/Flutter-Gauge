@@ -84,15 +84,15 @@ class _GaugeScreenState extends State<GaugeScreen> {
   // Determine color based on percentage of capacity
   Color _getThemeColor(double percentage) {
     if (percentage < 10) {
-      return const Color(0xFFE53935); // Red (rathu)
+      return const Color(0xFFFF3B30); // iOS Vibrant Red
     } else if (percentage >= 10 && percentage < 20) {
-      return const Color(0xFFFF9800); // Orange (thabili)
+      return const Color(0xFFFF9500); // iOS Vibrant Orange
     } else if (percentage >= 20 && percentage < 50) {
-      return const Color(0xFFFFEB3B); // Yellow (kaha)
+      return const Color(0xFFFFCC00); // iOS Vibrant Yellow
     } else if (percentage >= 50 && percentage < 70) {
-      return const Color(0xFF4CAF50); // Light Green (kola)
+      return const Color(0xFF34C759); // iOS Vibrant Green
     } else {
-      return const Color(0xFF00B6A6); // Teal/Cyan (matching image)
+      return const Color(0xFF00C7BE); // iOS Vibrant Teal (perfect mint/cyan shade)
     }
   }
 
@@ -408,7 +408,7 @@ class SolarGaugePainter extends CustomPainter {
       );
     }
 
-    // 4. Draw Radial Ticks
+    // 4. Draw Radial Ticks with fading opacity towards the bottom ends
     const int tickCount = 70;
     final double angleStep = totalSweepRad / (tickCount - 1);
 
@@ -429,7 +429,7 @@ class SolarGaugePainter extends CustomPainter {
       final double tickLength = isMajor ? 12.0 : 6.0;
       final double tickThickness = isMajor ? 2.5 : 1.0;
 
-      final startRadius = radius * 0.82;
+      final startRadius = radius * 0.76;
       final endRadius = startRadius + tickLength;
 
       final startOffset = Offset(
@@ -441,9 +441,19 @@ class SolarGaugePainter extends CustomPainter {
         center.dy + endRadius * sin(angle),
       );
 
-      final Color tickColor = isActive
+      // Calculate distance from the top angle (270 degrees) to fade out opacity towards bottom-left and bottom-right
+      final double distance = (angle - 270 * pi / 180).abs();
+      final double maxDistance = 135 * pi / 180;
+      final double distanceNormalized = (distance / maxDistance).clamp(0.0, 1.0);
+      
+      // opacityFactor: 1.0 at top, fading to 0.05 at the ends
+      final double opacityFactor = 1.0 - (distanceNormalized * 0.95);
+
+      final Color baseTickColor = isActive
           ? themeColor
-          : (isMajor ? const Color(0xFFCBD5E1) : const Color(0xFFE2E8F0));
+          : (isMajor ? const Color(0xFF94A3B8) : const Color(0xFFE2E8F0));
+      
+      final Color tickColor = baseTickColor.withOpacity(baseTickColor.opacity * opacityFactor);
 
       final tickPaint = Paint()
         ..color = tickColor
@@ -453,17 +463,53 @@ class SolarGaugePainter extends CustomPainter {
       canvas.drawLine(startOffset, endOffset, tickPaint);
     }
 
-    // 5. Draw the Needle (Starts at center, points to current progress edge)
+    // 5. Draw the inner circular ring/ridge (Neumorphic 3D raised ridge)
+    final double innerRidgeRadius = radius * 0.62;
+
+    // Draw the soft outer shadow of the ring
+    final shadowCirclePaint = Paint()
+      ..color = Colors.black.withOpacity(0.06)
+      ..style = PaintingStyle.fill
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawCircle(center, innerRidgeRadius, shadowCirclePaint);
+
+    // Draw the white ridge/ring body
+    final ridgePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, innerRidgeRadius, ridgePaint);
+
+    // Draw a subtle soft inner outline/border for the ring
+    final ridgeBorderPaint = Paint()
+      ..color = const Color(0xFFF1F5F9)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    canvas.drawCircle(center, innerRidgeRadius, ridgeBorderPaint);
+    
+    // Subtle glow color inside the ring
+    final centerGlowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          themeColor.withOpacity(0.04),
+          themeColor.withOpacity(0.005),
+          Colors.transparent,
+        ],
+        stops: const [0.5, 0.8, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: innerRidgeRadius));
+    canvas.drawCircle(center, innerRidgeRadius - 1, centerGlowPaint);
+
+    // 6. Draw the Needle (Starts from the inner ridge boundary to the progress track)
     final double needleAngle = startAngleRad + activeSweepRad;
-    final double needleLength = radius * 0.68;
+    final double needleStartRadius = innerRidgeRadius - 4; // Starts slightly inside the ridge
+    final double needleEndRadius = radius * 0.68; // Ends at the progress track
 
     final needleStart = Offset(
-      center.dx + (radius * 0.12) * cos(needleAngle),
-      center.dy + (radius * 0.12) * sin(needleAngle),
+      center.dx + needleStartRadius * cos(needleAngle),
+      center.dy + needleStartRadius * sin(needleAngle),
     );
     final needleEnd = Offset(
-      center.dx + needleLength * cos(needleAngle),
-      center.dy + needleLength * sin(needleAngle),
+      center.dx + needleEndRadius * cos(needleAngle),
+      center.dy + needleEndRadius * sin(needleAngle),
     );
 
     final needlePaint = Paint()
@@ -472,7 +518,7 @@ class SolarGaugePainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(needleStart, needleEnd, needlePaint);
 
-    // 6. Draw central texts inside the gauge (0, W, PV Power)
+    // 7. Draw central texts inside the gauge (0, W, PV Power)
     // - Current value text ("0" or actual power)
     final valueSpan = TextSpan(
       text: currentValue.toStringAsFixed(0),
