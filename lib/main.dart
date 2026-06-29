@@ -278,6 +278,120 @@ class _GaugeScreenState extends State<GaugeScreen> {
                 ),
               ),
               const SizedBox(height: 24),
+              // Second Gauge Card - Pill Tick Style (Sleep Score / Image Reference Style)
+              Card(
+                color: Colors.white,
+                elevation: 4.0,
+                shadowColor: const Color(0x0A000000),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 36.0, horizontal: 24.0),
+                  child: Column(
+                    children: [
+                      TweenAnimationBuilder<double>(
+                        tween: Tween<double>(begin: 0.0, end: _currentPowerW),
+                        duration: const Duration(milliseconds: 700),
+                        curve: Curves.decelerate,
+                        builder: (context, animatedValue, child) {
+                          final animatedPercentage = maxPowerW > 0
+                              ? (animatedValue / maxPowerW) * 100
+                              : 0.0;
+                          final animatedColor =
+                              _getThemeColor(animatedPercentage);
+                          return CustomPaint(
+                            size: const Size(280, 280),
+                            painter: PillGaugePainter(
+                              currentValue: animatedValue,
+                              maxValue: maxPowerW,
+                              themeColor: animatedColor,
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      // PV Capacity pill badge (same as first card)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(100),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: activeColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            const Text(
+                              'PV Capacity: ',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFF64748B),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              _capacityKWp.toStringAsFixed(2),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFF0F172A),
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const Text(
+                              ' kWp',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF94A3B8),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Inverter Smart Stats (same as first card)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildStatItem('Status', statusText, activeColor),
+                            Container(
+                                width: 1,
+                                height: 40,
+                                color: const Color(0xFFE2E8F0)),
+                            _buildStatItem('Current AC',
+                                '${currentAmps.toStringAsFixed(1)} A', null),
+                            Container(
+                                width: 1,
+                                height: 40,
+                                color: const Color(0xFFE2E8F0)),
+                            _buildStatItem('CO₂ Saved',
+                                '${co2SavedKg.toStringAsFixed(2)} kg', null),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
               // Simulator Input & Control Panel Card
               Card(
                 color: Colors.white,
@@ -711,6 +825,177 @@ class SolarGaugePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant SolarGaugePainter oldDelegate) {
+    return oldDelegate.currentValue != currentValue ||
+        oldDelegate.maxValue != maxValue ||
+        oldDelegate.themeColor != themeColor;
+  }
+}
+
+// ─────────────────────────────────────────────
+// Pill Gauge Painter - Sleep Score Style
+// Thick rounded pill-shaped ticks in a semicircle
+// ─────────────────────────────────────────────
+class PillGaugePainter extends CustomPainter {
+  final double currentValue;
+  final double maxValue;
+  final Color themeColor;
+
+  PillGaugePainter({
+    required this.currentValue,
+    required this.maxValue,
+    required this.themeColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2 + 20);
+    final radius = min(size.width, size.height) / 2;
+
+    // Semicircle: 180 degrees, from left (180°) to right (0°) passing over top
+    const double startAngleDeg = 180.0;
+    const double totalSweepDeg = 180.0;
+    const double startAngleRad = startAngleDeg * pi / 180;
+    const double totalSweepRad = totalSweepDeg * pi / 180;
+
+    final double fillPercentage =
+        maxValue > 0 ? (currentValue / maxValue).clamp(0.0, 1.0) : 0.0;
+
+    // Pill tick configuration
+    const int tickCount = 25;
+    const double pillWidth = 10.0;
+    const double pillHeight = 22.0;
+    const double cornerRadius = 5.0;
+    final double tickPlacementRadius = radius * 0.72;
+
+    final double angleStep = totalSweepRad / (tickCount - 1);
+
+    for (int i = 0; i < tickCount; i++) {
+      final double progressAtTick = i / (tickCount - 1);
+      final bool isActive = progressAtTick <= fillPercentage;
+
+      final double angle = startAngleRad + (i * angleStep);
+
+      // Center of each pill on the arc
+      final double px = center.dx + tickPlacementRadius * cos(angle);
+      final double py = center.dy + tickPlacementRadius * sin(angle);
+
+      // Pill color: active = theme color with glow, inactive = light grey
+      final Color pillColor = isActive
+          ? themeColor
+          : const Color(0xFFE8EDF2);
+
+      // Opacity: active ticks stay fully opaque, inactive are soft
+      final double opacity = isActive ? 1.0 : 0.85;
+
+      final paint = Paint()
+        ..color = pillColor.withOpacity(opacity)
+        ..style = PaintingStyle.fill;
+
+      // Draw rounded rectangle (pill), rotated to point outward from center
+      canvas.save();
+      canvas.translate(px, py);
+      canvas.rotate(angle + pi / 2); // rotate so pill points radially outward
+
+      final rrect = RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset.zero,
+          width: pillWidth,
+          height: pillHeight,
+        ),
+        const Radius.circular(cornerRadius),
+      );
+
+      canvas.drawRRect(rrect, paint);
+
+      // Active ticks: add subtle inner glow by drawing a slightly smaller lighter pill on top
+      if (isActive) {
+        final glowPaint = Paint()
+          ..color = Colors.white.withOpacity(0.25)
+          ..style = PaintingStyle.fill;
+        final glowRRect = RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: const Offset(0, -2),
+            width: pillWidth * 0.55,
+            height: pillHeight * 0.35,
+          ),
+          const Radius.circular(cornerRadius),
+        );
+        canvas.drawRRect(glowRRect, glowPaint);
+      }
+
+      canvas.restore();
+    }
+
+    // Center value text
+    final bool isKw = currentValue >= 1000.0;
+    final String displayValue = isKw
+        ? (currentValue / 1000.0).toStringAsFixed(2)
+        : currentValue.toStringAsFixed(0);
+    final String displayUnit = isKw ? 'kW' : 'W';
+
+    // Large number
+    final valueSpan = TextSpan(
+      text: displayValue,
+      style: const TextStyle(
+        fontSize: 52,
+        fontWeight: FontWeight.w900,
+        color: Color(0xFF0F172A),
+        height: 1.0,
+      ),
+    );
+    final valuePainter = TextPainter(
+      text: valueSpan,
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.center,
+    )..layout(minWidth: 0, maxWidth: size.width);
+
+    valuePainter.paint(
+      canvas,
+      Offset(center.dx - valuePainter.width / 2, center.dy - 40),
+    );
+
+    // Unit text
+    final unitSpan = TextSpan(
+      text: displayUnit,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF64748B),
+      ),
+    );
+    final unitPainter = TextPainter(
+      text: unitSpan,
+      textDirection: TextDirection.ltr,
+    )..layout(minWidth: 0, maxWidth: size.width);
+
+    unitPainter.paint(
+      canvas,
+      Offset(center.dx - unitPainter.width / 2, center.dy + 16),
+    );
+
+    // Label
+    final labelSpan = TextSpan(
+      text: 'PV POWER',
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF94A3B8),
+        letterSpacing: 1.5,
+      ),
+    );
+    final labelPainter = TextPainter(
+      text: labelSpan,
+      textDirection: TextDirection.ltr,
+    )..layout(minWidth: 0, maxWidth: size.width);
+
+    labelPainter.paint(
+      canvas,
+      Offset(center.dx - labelPainter.width / 2, center.dy + 40),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant PillGaugePainter oldDelegate) {
     return oldDelegate.currentValue != currentValue ||
         oldDelegate.maxValue != maxValue ||
         oldDelegate.themeColor != themeColor;
