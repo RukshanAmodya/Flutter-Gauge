@@ -848,24 +848,24 @@ class PillGaugePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2 + 20);
+    // Push center downward so the semicircle renders in the upper portion
+    final center = Offset(size.width / 2, size.height * 0.62);
     final radius = min(size.width, size.height) / 2;
 
     // Semicircle: 180 degrees, from left (180°) to right (0°) passing over top
-    const double startAngleDeg = 180.0;
-    const double totalSweepDeg = 180.0;
-    const double startAngleRad = startAngleDeg * pi / 180;
-    const double totalSweepRad = totalSweepDeg * pi / 180;
+    // Use final (not const) because pi is not a const in Dart
+    final double startAngleRad = pi; // 180 degrees
+    final double totalSweepRad = pi; // 180 degrees
 
     final double fillPercentage =
         maxValue > 0 ? (currentValue / maxValue).clamp(0.0, 1.0) : 0.0;
 
-    // Pill tick configuration
+    // Pill tick configuration - larger so they are clearly visible
     const int tickCount = 25;
-    const double pillWidth = 10.0;
-    const double pillHeight = 22.0;
-    const double cornerRadius = 5.0;
-    final double tickPlacementRadius = radius * 0.72;
+    const double pillWidth = 11.0;
+    const double pillHeight = 24.0;
+    const double cornerRadius = 5.5;
+    final double tickPlacementRadius = radius * 0.80;
 
     final double angleStep = totalSweepRad / (tickCount - 1);
 
