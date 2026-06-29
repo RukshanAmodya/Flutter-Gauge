@@ -83,18 +83,29 @@ class _GaugeScreenState extends State<GaugeScreen> {
     }
   }
 
-  // Determine color based on percentage of capacity
+  // Interpolated color based on percentage to make it transition smoothly
   Color _getThemeColor(double percentage) {
-    if (percentage < 10) {
-      return const Color(0xFFFF3B30); // iOS Vibrant Red
-    } else if (percentage >= 10 && percentage < 20) {
-      return const Color(0xFFFF9500); // iOS Vibrant Orange
-    } else if (percentage >= 20 && percentage < 50) {
-      return const Color(0xFFFFCC00); // iOS Vibrant Yellow
-    } else if (percentage >= 50 && percentage < 70) {
-      return const Color(0xFF34C759); // iOS Vibrant Green
+    final pct = percentage.clamp(0.0, 100.0);
+    
+    // Modern Luminous Color Palette Stops:
+    // 0%   -> Luminous Red: Color(0xFFFF3B30)
+    // 15%  -> Luminous Orange: Color(0xFFFF9500)
+    // 35%  -> Luminous Yellow: Color(0xFFFED200)
+    // 65%  -> Luminous Light Green: Color(0xFF4CD964)
+    // 100% -> Luminous Emerald Green (Top): Color(0xFF00E676)
+    
+    if (pct < 15.0) {
+      final t = pct / 15.0;
+      return Color.lerp(const Color(0xFFFF3B30), const Color(0xFFFF9500), t)!;
+    } else if (pct < 35.0) {
+      final t = (pct - 15.0) / 20.0;
+      return Color.lerp(const Color(0xFFFF9500), const Color(0xFFFED200), t)!;
+    } else if (pct < 65.0) {
+      final t = (pct - 35.0) / 30.0;
+      return Color.lerp(const Color(0xFFFED200), const Color(0xFF4CD964), t)!;
     } else {
-      return const Color(0xFF00C7BE); // iOS Vibrant Teal (perfect mint/cyan shade)
+      final t = (pct - 65.0) / 35.0;
+      return Color.lerp(const Color(0xFF4CD964), const Color(0xFF00E676), t)!;
     }
   }
 
@@ -174,12 +185,14 @@ class _GaugeScreenState extends State<GaugeScreen> {
                         duration: const Duration(milliseconds: 700),
                         curve: Curves.decelerate,
                         builder: (context, animatedValue, child) {
+                          final animatedPercentage = maxPowerW > 0 ? (animatedValue / maxPowerW) * 100 : 0.0;
+                          final animatedColor = _getThemeColor(animatedPercentage);
                           return CustomPaint(
                             size: const Size(280, 280),
                             painter: SolarGaugePainter(
                               currentValue: animatedValue,
                               maxValue: maxPowerW,
-                              themeColor: activeColor,
+                              themeColor: animatedColor,
                             ),
                           );
                         },
